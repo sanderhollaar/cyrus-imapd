@@ -67,7 +67,7 @@
 
 
 #define JMAP_ROOT          "/jmap"
-#define JMAP_BASE_URL      JMAP_ROOT "/"
+#define JMAP_BASE_URL      "https://jmap.humilis.net" JMAP_ROOT "/"
 #define JMAP_WS_COL        "ws/"
 #define JMAP_UPLOAD_COL    "upload/"
 #define JMAP_UPLOAD_TPL    "{accountId}/"
@@ -115,7 +115,7 @@ static struct connect_params ws_params = {
 struct namespace_t namespace_jmap = {
     URL_NS_JMAP, 0, "jmap", JMAP_ROOT, "/.well-known/jmap",
     jmap_need_auth, 0,
-    /*mbtype*/0, 
+    /*mbtype*/0,
     (ALLOW_READ | ALLOW_POST | ALLOW_READONLY),
     &jmap_init, &jmap_auth, &jmap_reset, &jmap_shutdown, NULL,
     {
@@ -260,7 +260,7 @@ static void jmap_shutdown(void)
         free(h);
     }
     ptrarray_fini(&my_jmap_settings.event_handlers);
-}   
+}
 
 
 /*
@@ -536,7 +536,7 @@ static int meth_post(struct transaction_t *txn,
     }
 
     if (ret) ret = jmap_error_response(txn, ret, &res);
-        
+
     /* ensure we didn't leak anything! */
     assert(!open_mailboxes_exist());
     assert(!open_mboxlocks_exist());
@@ -805,7 +805,7 @@ static int has_shared_rw_rights_cb(const mbentry_t *mbentry, void *vrock)
         /* one writable mailbox is enough to short-circuit the search */
         return CYRUSDB_DONE;
     }
-    
+
     return 0;
 }
 
