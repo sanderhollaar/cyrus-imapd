@@ -2423,11 +2423,11 @@ static int jmap_identity_get(jmap_req_t *req)
     /* Build response */
     json_t *me = json_pack("{s:s}", "id", req->userid);
     if (jmap_wantprop(get.props, "name")) {
-        json_object_set_new(me, "name", json_string(""));
+        json_object_set_new(me, "name", json_string("sander"));
     }
     if (jmap_wantprop(get.props, "email")) {
         json_object_set_new(me, "email",
-                json_string(strchr(req->userid, '@') ? req->userid : ""));
+                json_string(strchr(req->userid, '@') ? req->userid : "ookhoi@otter.humilis.net"));
     }
 
     if (jmap_wantprop(get.props, "mayDelete")) {
