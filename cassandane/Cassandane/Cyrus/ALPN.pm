@@ -64,6 +64,7 @@ sub new
     my $config = Cassandane::Config->default()->clone();
     $config->set(tls_server_cert => '@basedir@/conf/certs/cert.pem',
                  tls_server_key => '@basedir@/conf/certs/key.pem',
+                 allowstarttls => 'on',
                  httpmodules => 'caldav');
 
     my $self = $class->SUPER::new({
@@ -150,6 +151,7 @@ sub assert_alpn_protocol
 }
 
 sub test_imap_none
+    :SuppressLSAN(libcrypto.so libssl.so)
 {
     my ($self) = @_;
 
@@ -169,6 +171,7 @@ sub test_imap_none
 }
 
 sub test_imap_good
+    :SuppressLSAN(libcrypto.so libssl.so)
 {
     my ($self) = @_;
 
@@ -206,6 +209,7 @@ sub test_imap_bad
 }
 
 sub test_imaps_none
+    :SuppressLSAN(libcrypto.so libssl.so)
 {
     my ($self) = @_;
 
@@ -220,6 +224,7 @@ sub test_imaps_none
 }
 
 sub test_imaps_good
+    :SuppressLSAN(libcrypto.so libssl.so)
 {
     my ($self) = @_;
 
@@ -283,6 +288,7 @@ sub do_https_request
 
 sub test_https_none
     :want_service_https :needs_component_httpd
+    :SuppressLSAN(libcrypto.so libssl.so)
 {
     my ($self) = @_;
 
@@ -300,6 +306,7 @@ sub test_https_none
 
 sub test_https_http10
     :want_service_https :needs_component_httpd
+    :SuppressLSAN(libcrypto.so libssl.so)
 {
     my ($self) = @_;
 
@@ -317,6 +324,7 @@ sub test_https_http10
 
 sub test_https_http11
     :want_service_https :needs_component_httpd
+    :SuppressLSAN(libcrypto.so libssl.so)
 {
     my ($self) = @_;
 
@@ -334,6 +342,7 @@ sub test_https_http11
 
 sub test_https_multi
     :want_service_https :needs_component_httpd
+    :SuppressLSAN(libcrypto.so libssl.so)
 {
     my ($self) = @_;
 
@@ -351,6 +360,7 @@ sub test_https_multi
 
 sub test_https_h2
     :want_service_https :needs_component_httpd :needs_dependency_nghttp2
+    :SuppressLSAN(libcrypto.so libssl.so)
 {
     my ($self) = @_;
 
@@ -372,6 +382,7 @@ sub test_https_h2
 
 sub test_https_multi2
     :want_service_https :needs_component_httpd :needs_dependency_nghttp2
+    :SuppressLSAN(libcrypto.so libssl.so)
 {
     my ($self) = @_;
 
@@ -393,6 +404,7 @@ sub test_https_multi2
 
 sub test_https_bad
     :want_service_https :needs_component_httpd
+    :SuppressLSAN(libcrypto.so libssl.so)
 {
     my ($self) = @_;
 

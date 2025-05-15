@@ -430,7 +430,7 @@ static struct http_connection http_conn;
 static sasl_ssf_t extprops_ssf = 0;
 int https = 0;
 static int httpd_tls_required = 0;
-static int httpd_tls_enabled = 0;
+static int httpd_starttls_enabled = 0;
 static unsigned avail_auth_schemes = 0; /* bitmask of available auth schemes */
 unsigned long config_httpmodules;
 
@@ -438,6 +438,8 @@ static time_t compile_time;
 struct buf serverinfo = BUF_INITIALIZER;
 static ptrarray_t httpd_pipes = PTRARRAY_INITIALIZER;
 static int http2_enabled = 0;
+
+static int shutdown_signal = 0;
 
 int ignorequota = 0;
 int apns_enabled = 0;
@@ -485,6 +487,7 @@ static int tls_init(int client_auth, struct buf *serverinfo);
 static void starttls(struct http_connection *conn, int timeout);
 void usage(void) __attribute__((noreturn));
 void shut_down(int code) __attribute__((noreturn));
+void shut_down_via_signal(int code);
 
 /* Enable the resetting of a sasl_conn_t */
 static int reset_saslconn(sasl_conn_t **conn);
@@ -811,7 +814,7 @@ int service_init(int argc __attribute__((unused)),
     http_conn.pgin = protgroup_new(0);
 
     /* set signal handlers */
-    signals_set_shutdown(&shut_down);
+    signals_set_shutdown(&shut_down_via_signal);
     signal(SIGPIPE, SIG_IGN);
 
     /* load the SASL plugins */
@@ -955,6 +958,9 @@ int service_main(int argc __attribute__((unused)),
     session_new_id();
 
     signals_poll();
+    if (shutdown_signal) {
+        shut_down(shutdown_signal);
+    }
 
     httpd_in = prot_new(0, 0);
     httpd_out = prot_new(1, 1);
@@ -1209,6 +1215,12 @@ void shut_down(int code)
 }
 
 
+void shut_down_via_signal(int code)
+{
+    shutdown_signal = code;
+}
+
+
 EXPORTED void fatal(const char* s, int code)
 {
     static int recurse_code = 0;
@@ -1307,7 +1319,7 @@ static int tls_init(int client_auth, struct buf *serverinfo)
         return HTTP_SERVER_ERROR;
     }
 
-    httpd_tls_enabled = 1;
+    httpd_starttls_enabled = config_getswitch(IMAPOPT_ALLOWSTARTTLS);
 
     return 0;
 }
@@ -1642,7 +1654,7 @@ static int preauth_check_hdrs(struct transaction_t *txn)
     else if (txn->flags.ver == VER_1_1 &&
              !(txn->conn->tls_ctx || (txn->flags.conn & CONN_CLOSE))) {
         /* Advertise available upgrade protocols */
-        if (httpd_tls_enabled &&
+        if (httpd_starttls_enabled &&
             config_mupdate_server && config_getstring(IMAPOPT_PROXYSERVERS)) {
             txn->flags.upgrade |= UPGRADE_TLS;
         }
@@ -2234,6 +2246,10 @@ static void cmdloop(struct http_connection *conn)
             }
 
             signals_poll();
+            if (shutdown_signal) {
+                transaction_free(&txn);
+                shut_down(shutdown_signal);
+            }
 
             syslog(LOG_DEBUG, "http_proxy_check_input()");
 
@@ -2277,6 +2293,7 @@ static void cmdloop(struct http_connection *conn)
         if (ret == HTTP_SHUTDOWN) {
             syslog(LOG_WARNING,
                    "Shutdown file: \"%s\", closing connection", conn->close_str);
+            transaction_free(&txn);
             shut_down(0);
         }
 
@@ -2415,7 +2432,8 @@ static void parse_upgrade(struct transaction_t *txn)
         char *token;
 
         while ((token = tok_next(&tok))) {
-            if (!txn->conn->tls_ctx && httpd_tls_enabled &&
+            if (!txn->conn->tls_ctx && httpd_starttls_enabled &&
+                config_mupdate_server && config_getstring(IMAPOPT_PROXYSERVERS) &&
                 !strcasecmp(token, TLS_VERSION)) {
                 /* Upgrade to TLS */
                 txn->flags.conn |= CONN_UPGRADE;

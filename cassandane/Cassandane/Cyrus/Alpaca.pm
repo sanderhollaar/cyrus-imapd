@@ -51,7 +51,11 @@ use Cassandane::Util::Socket;
 sub new
 {
     my $class = shift;
-    return $class->SUPER::new({}, @_);
+
+    my $config = Cassandane::Config->default()->clone();
+    $config->set(allowstarttls => 'on');
+
+    return $class->SUPER::new({config => $config}, @_);
 }
 
 sub set_up
@@ -312,6 +316,7 @@ sub test_http_post_drop_connection2
 
 sub test_http_post_drop_connection3
     :TLS :needs_dependency_openssl
+    :SuppressLSAN(libcrypto.so)
 {
     my ($self) = @_;
 
